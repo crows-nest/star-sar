@@ -8,7 +8,7 @@ Welcome to star-sar's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: index:
 
 Distributed Data Fusion Diagram
 -------------------------------
