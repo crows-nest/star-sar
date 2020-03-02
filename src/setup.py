@@ -6,7 +6,7 @@ setuptools.setup(
    description='a DDF SAR solution',
    author='Jeff Venicx',
    author_email='jeve0658@colorado.edu',
-   packages=['crow_rf'], 
+   packages=['crow_rf', 'crow_gis', 'crow_models'], 
    install_requires=[], #external packages as dependencies
    python_requires= '>=3.6'
 )
