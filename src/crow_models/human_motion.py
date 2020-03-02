@@ -6,11 +6,13 @@ import matplotlib.pyplot as plt
 from crow_gis.GIS_topo import GIS_topo
 import numpy as np
 
-GIS_ENABLE = 0
+GIS_ENABLE = 1
 
 
 def markov_chain_monte_carlo(state_space, transition_model, 
                              num_samples=1000, time_steps=20):
+
+    sample_space = np.zeros(state_space.size)
 
     for i in range(num_samples):
 
@@ -94,6 +96,59 @@ def sampled_location(state_space, transition_model, time_steps):
     return index
 
 
+def depth_trans_model(array_grad):
+    dict_movement = {"forward": (1, 2), "left": (0, 1), "right": (2, 1), 
+                      "backward": (1, 0), "stop":(1, 1) }
+
+
+    dict_transition_model = {"forward": 4 , "left": 2, "right": 2, 
+                             "backward": 0, "stop": 4 }
+
+    sum_score =  0
+    for key in dict_movement:
+        index = dict_movement[key]
+        gradient = array_grad[index[0],index[1]]
+        score = gradient_score(gradient)
+        dict_transition_model[key] += score
+        sum_score +=  dict_transition_model[key]
+
+
+    for transition in dict_transition_model:
+        dict_transition_model[transition] /= sum_score
+        
+
+    print(dict_transition_model)
+    pass
+
+def gradient_score(gradient):
+
+    if -10 <= gradient <= 10:
+        return 20
+
+    else:
+        return 10
+
+
+def get_neighbor_gradients(state_space, loc):
+    
+    array_indexing = [-1, 0, 1]
+    height_loc = state_space[loc[0], loc[1]]
+    array_grad = np.zeros((3, 3))
+    #TODO not checking for edge of map
+    for index_i, i in enumerate(array_indexing):
+        for index_j, j in enumerate(array_indexing):
+            x = loc[0] + i
+            y = loc[1] + j
+            
+            height_neighbor = state_space[x, y]
+            grad = height_neighbor - height_loc
+            array_grad[index_i, index_j] = grad
+    
+    return array_grad
+
+
+
+
 if __name__ == "__main__":
 
 
@@ -108,25 +163,28 @@ if __name__ == "__main__":
         src_ds = GIS_obj.open_geotiff(filename)
         array_depth = GIS_obj.extract_depth_np(src_ds)
 
-        plt.imshow(array_depth)
-        plt.show()
+        mini_array = array_depth[1000:1100, 1000:1100]
+
+        array_grad = get_neighbor_gradients(mini_array, (50, 50))
+
+        print(depth_trans_model(array_grad))
+
+
+
+        #plt.imshow(array_depth[1000:1100, 1000:1100])
+        #plt.show()
+
+
     
     else:
         array_depth = np.zeros((100,100))
-    
-    array_MC = np.zeros(array_depth.shape)
+        array_MC = np.zeros(array_depth.shape)
 
 
+        transition_model_desc = ["left", "forward", "right", "backward", "stop"]
+        transition_model = [0.1, 0.4, 0.1, 0.0, 0.4]
+        posterior_array = markov_chain_monte_carlo(array_MC, transition_model,
+                                                num_samples= 100, time_steps= 50)
 
-    transition_model_desc = ["left", "forward", "right", "backward", "stop"]
-    transition_model = [0.1, 0.4, 0.1, 0.0, 0.4]
-    posterior_array = markov_chain_monte_carlo(array_MC, transition_model,
-                                               num_samples= 100000, time_steps= 50)
-
-    plt.imshow(posterior_array)
-    plt.show()
-
-
-
-
-
+        plt.imshow(posterior_array)
+        plt.show()
