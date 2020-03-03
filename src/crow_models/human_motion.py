@@ -5,26 +5,29 @@ import os
 import matplotlib.pyplot as plt
 from crow_gis.GIS_topo import GIS_topo
 import numpy as np
+from tqdm import tqdm
 
 GIS_ENABLE = 1
+TRANSITION_ORDER = ["left", "forward", "right", "backward", "stop"]
 
 
-def markov_chain_monte_carlo(state_space, transition_model, 
-                             num_samples=1000, time_steps=20):
+def markov_chain_monte_carlo(state_space, 
+                             num_samples=10, time_steps=2):
 
-    sample_space = np.zeros(state_space.size)
+    sample_space = np.zeros(state_space.shape)
+    print(sample_space.shape)
 
-    for i in range(num_samples):
+    for i in tqdm(range(num_samples)):
 
-        location = sampled_location(state_space, transition_model, time_steps)
+        location = sampled_location(state_space, time_steps)
 
-        state_space[location[0], location[1]] += 1
+        sample_space[location[0], location[1]] += 1
         
 
-    return state_space
+    return sample_space
 
 
-def sampled_location(state_space, transition_model, time_steps):
+def sampled_location(state_space, time_steps):
     
     index = [50, 5]
     max_values = state_space.shape
@@ -34,43 +37,46 @@ def sampled_location(state_space, transition_model, time_steps):
     transition_sums = [0.0, 0.0, 0.0, 0.0, 0.0]
     i = 0
     while i <= time_steps:
-        transition = np.random.rand()
+        rand_transition = np.random.rand()
 
-        if transition <= model_sum(transition_model, 0): #move left
+        dict_transition_model = depth_trans_model(state_space, index)
+
+        transition_model = []
+        for direction in TRANSITION_ORDER:
+            value = dict_transition_model[direction]
+            transition_model.append(value)
+
+        if rand_transition <= model_sum(transition_model, 0): #move left
             #print(f"rand {transition} move left")
             index[0] += 1
 
             if index[0] < 0 or index[0] >= max_values[0]:
                 index[0] -= 1
                 continue
-
             else:
                 i += 1
                 transition_sums[0] += 1
             
-
-        elif transition <= model_sum(transition_model, 1):
+        elif rand_transition <= model_sum(transition_model, 1):
             #print(f"rand {transition} move forward")
             index[1] += 1
             if index[1] < 0 or index[1] >= max_values[1]:
                 index[1] -= 1
                 continue
-
             transition_sums[1] += 1
 
-        elif transition <= model_sum(transition_model, 2):
+        elif rand_transition <= model_sum(transition_model, 2):
             #print(f"rand {transition} move right")
             index[0] -= 1
             if index[0] < 0 or index[0] >= max_values[0]:
                 index[0] += 1
                 continue
-             
             else:
                 i += 1
                 transition_sums[2] += 1
 
 
-        elif transition <= model_sum(transition_model, 3):
+        elif rand_transition <= model_sum(transition_model, 3):
             #print(f"rand {transition} move backward")
             index[1] -= 1
             if index[0] < 0 or index[0] >= max_values[0]:
@@ -80,54 +86,44 @@ def sampled_location(state_space, transition_model, time_steps):
                 i += 1
                 transition_sums[3] += 1
 
-        elif transition <= model_sum(transition_model, 4):
+        elif rand_transition <= model_sum(transition_model, 4):
             #print(f"rand {transition} stop")
             i += 1
             transition_sums[4] += 1
         
-
-
-
     total_sum = sum(transition_sums)
-    probabilites = [x/ total_sum for x in transition_sums]
+    probabilites = [x / total_sum for x in transition_sums]
     #print(probabilites)
-
-
     return index
 
-
-def depth_trans_model(array_grad):
+def depth_trans_model(array_grad, index):
     dict_movement = {"forward": (1, 2), "left": (0, 1), "right": (2, 1), 
                       "backward": (1, 0), "stop":(1, 1) }
 
-
-    dict_transition_model = {"forward": 4 , "left": 2, "right": 2, 
-                             "backward": 0, "stop": 4 }
+    dict_transition_model = {"forward": 20 , "left": 10, "right": 10, 
+                             "backward": 0, "stop": 5 }
 
     sum_score =  0
     for key in dict_movement:
         index = dict_movement[key]
         gradient = array_grad[index[0],index[1]]
-        score = gradient_score(gradient)
-        dict_transition_model[key] += score
+        grad_score = gradient_score(gradient)
+        dict_transition_model[key] += grad_score
         sum_score +=  dict_transition_model[key]
-
 
     for transition in dict_transition_model:
         dict_transition_model[transition] /= sum_score
         
-
-    print(dict_transition_model)
-    pass
+    return dict_transition_model
 
 def gradient_score(gradient):
 
+    #TODO maybe build a better transition model from this?
     if -10 <= gradient <= 10:
-        return 20
+        return 30
 
     else:
         return 10
-
 
 def get_neighbor_gradients(state_space, loc):
     
@@ -147,8 +143,6 @@ def get_neighbor_gradients(state_space, loc):
     return array_grad
 
 
-
-
 if __name__ == "__main__":
 
 
@@ -164,15 +158,21 @@ if __name__ == "__main__":
         array_depth = GIS_obj.extract_depth_np(src_ds)
 
         mini_array = array_depth[1000:1100, 1000:1100]
-
-        array_grad = get_neighbor_gradients(mini_array, (50, 50))
-
-        print(depth_trans_model(array_grad))
+        print(mini_array.shape)
+     
 
 
+        posterior_array = markov_chain_monte_carlo(mini_array, 
+                                                   num_samples = 10000, 
+                                                   time_steps = 50)
+        
+        plt.subplot(1, 2, 1)
+        plt.imshow(posterior_array)
 
-        #plt.imshow(array_depth[1000:1100, 1000:1100])
-        #plt.show()
+        plt.subplot(1, 2, 2)
+        plt.imshow(mini_array)
+
+        plt.show()
 
 
     
@@ -183,8 +183,9 @@ if __name__ == "__main__":
 
         transition_model_desc = ["left", "forward", "right", "backward", "stop"]
         transition_model = [0.1, 0.4, 0.1, 0.0, 0.4]
-        posterior_array = markov_chain_monte_carlo(array_MC, transition_model,
-                                                num_samples= 100, time_steps= 50)
+        posterior_array = markov_chain_monte_carlo(array_MC,
+                                                   num_samples= 1000, 
+                                                   time_steps= 100)
 
         plt.imshow(posterior_array)
         plt.show()
