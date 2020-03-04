@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 from crow_gis.GIS_topo import GIS_topo
 import numpy as np
 from tqdm import tqdm
+from sklearn import mixture
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+
 
 GIS_ENABLE = 1
 TRANSITION_ORDER = ["left", "forward", "right", "backward", "stop"]
@@ -46,6 +50,7 @@ def sampled_location(state_space, time_steps):
             value = dict_transition_model[direction]
             transition_model.append(value)
 
+        #TODO how do  I fix this garbagio?
         if rand_transition <= model_sum(transition_model, 0): #move left
             #print(f"rand {transition} move left")
             index[0] += 1
@@ -100,7 +105,7 @@ def depth_trans_model(array_grad, index):
     dict_movement = {"forward": (1, 2), "left": (0, 1), "right": (2, 1), 
                       "backward": (1, 0), "stop":(1, 1) }
 
-    dict_transition_model = {"forward": 20 , "left": 10, "right": 10, 
+    dict_transition_model = {"forward": 30 , "left": 10, "right": 10, 
                              "backward": 0, "stop": 5 }
 
     sum_score =  0
@@ -142,6 +147,73 @@ def get_neighbor_gradients(state_space, loc):
     
     return array_grad
 
+def gmm_from_samples(sample_space):
+
+    sample_list = sample_space_to_samples(sample_space)
+    gmm = mixture.GaussianMixture().fit(sample_list)
+    
+    print(gmm.means_)
+    return gmm
+
+def sample_space_to_samples(sample_space):
+    sample_list = []
+
+    for i in range(len(sample_space)):
+        for j in range(len(sample_space[0])):
+            num_samples = sample_space[i][j]
+            for hit in range(int(num_samples)):
+                sample_list.append((j,i))
+
+    return sample_list    
+
+
+def plot_gmm_depth(gmm, array_depth):
+    
+    fig = plt.figure()
+    
+    x = np.linspace(0, 100, 20)
+    y = np.linspace(0, 100, 20)
+
+    X, Y = np.meshgrid(x, y)
+
+    XX = np.array([X.ravel(), Y.ravel()]).T
+    Z = gmm.score_samples(XX)
+    Z = Z.reshape(X.shape)
+    Z = np.add(Z, 10)
+
+
+    norm = plt.Normalize(Z.min(), Z.max())
+    colors = cm.viridis(norm(Z))
+    rcount, ccount, _ = colors.shape
+
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+
+    surf = ax1.plot_surface(X, Y, Z, rcount=rcount, ccount=ccount,
+                            facecolors=colors, shade=False)
+
+    surf.set_facecolors((0, 0, 0, 0))
+    
+
+
+    xx, yy = np.meshgrid(np.linspace(0,100, 100), np.linspace(0,100, 100))
+    
+    X = xx 
+    Y = yy
+    Z = (xx * 0 )
+    Z = np.subtract(Z, 20)
+    
+    array_depth = np.subtract(array_depth, array_depth.min())
+    array_depth = array_depth/array_depth.max()    # Uses 1 division and image.size multiplications
+
+
+    ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=plt.cm.BrBG(array_depth), shade=False)
+
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.imshow(array_depth)
+    
+
+    plt.show()
+    pass
 
 if __name__ == "__main__":
 
@@ -162,19 +234,16 @@ if __name__ == "__main__":
      
 
 
-        posterior_array = markov_chain_monte_carlo(mini_array, 
-                                                   num_samples = 10000, 
+        sample_space = markov_chain_monte_carlo(mini_array, 
+                                                   num_samples = 5000, 
                                                    time_steps = 50)
         
-        plt.subplot(1, 2, 1)
-        plt.imshow(posterior_array)
+        sample_gmm = gmm_from_samples(sample_space)
+        
 
-        plt.subplot(1, 2, 2)
-        plt.imshow(mini_array)
+        plot_gmm_depth(sample_gmm, mini_array)
 
-        plt.show()
-
-
+    
     
     else:
         array_depth = np.zeros((100,100))
