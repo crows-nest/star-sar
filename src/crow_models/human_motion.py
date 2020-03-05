@@ -33,7 +33,7 @@ def markov_chain_monte_carlo(state_space,
 
 def sampled_location(state_space, time_steps):
     
-    index = [50, 5]
+    index = [60, 5]
     max_values = state_space.shape
 
     model_sum = lambda model, index: sum(model[0:index+1])
@@ -43,7 +43,9 @@ def sampled_location(state_space, time_steps):
     while i <= time_steps:
         rand_transition = np.random.rand()
 
-        dict_transition_model = depth_trans_model(state_space, index)
+
+        array_grad = get_neighbor_gradients(state_space, index)
+        dict_transition_model = depth_trans_model(array_grad, index)
 
         transition_model = []
         for direction in TRANSITION_ORDER:
@@ -105,7 +107,7 @@ def depth_trans_model(array_grad, index):
     dict_movement = {"forward": (1, 2), "left": (0, 1), "right": (2, 1), 
                       "backward": (1, 0), "stop":(1, 1) }
 
-    dict_transition_model = {"forward": 30 , "left": 10, "right": 10, 
+    dict_transition_model = {"forward": 20 , "left": 10, "right": 10, 
                              "backward": 0, "stop": 5 }
 
     sum_score =  0
@@ -124,11 +126,11 @@ def depth_trans_model(array_grad, index):
 def gradient_score(gradient):
 
     #TODO maybe build a better transition model from this?
-    if -10 <= gradient <= 10:
-        return 30
+    if gradient < 0:
+        return 15
 
     else:
-        return 10
+        return 5
 
 def get_neighbor_gradients(state_space, loc):
     
@@ -150,7 +152,7 @@ def get_neighbor_gradients(state_space, loc):
 def gmm_from_samples(sample_space):
 
     sample_list = sample_space_to_samples(sample_space)
-    gmm = mixture.GaussianMixture().fit(sample_list)
+    gmm = mixture.GaussianMixture(n_components=10).fit(sample_list)
     
     print(gmm.means_)
     return gmm
@@ -167,7 +169,7 @@ def sample_space_to_samples(sample_space):
     return sample_list    
 
 
-def plot_gmm_depth(gmm, array_depth):
+def plot_gmm_depth(gmm, array_depth, sample_space):
     
     fig = plt.figure()
     
@@ -179,41 +181,50 @@ def plot_gmm_depth(gmm, array_depth):
     XX = np.array([X.ravel(), Y.ravel()]).T
     Z = gmm.score_samples(XX)
     Z = Z.reshape(X.shape)
-    Z = np.add(Z, 10)
-
+    Z = np.exp(Z)
+    #Z = np.add(Z, 10)
+    #Z *= .1
+    print(Z.shape)
 
     norm = plt.Normalize(Z.min(), Z.max())
     colors = cm.viridis(norm(Z))
     rcount, ccount, _ = colors.shape
 
-    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+    ax1 = fig.add_subplot(1, 3, 1, projection='3d')
 
     surf = ax1.plot_surface(X, Y, Z, rcount=rcount, ccount=ccount,
                             facecolors=colors, shade=False)
 
     surf.set_facecolors((0, 0, 0, 0))
-    
-
 
     xx, yy = np.meshgrid(np.linspace(0,100, 100), np.linspace(0,100, 100))
     
     X = xx 
     Y = yy
     Z = (xx * 0 )
-    Z = np.subtract(Z, 20)
+    Z = np.subtract(Z, .00005)
+
     
     array_depth = np.subtract(array_depth, array_depth.min())
     array_depth = array_depth/array_depth.max()    # Uses 1 division and image.size multiplications
 
 
-    ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=plt.cm.BrBG(array_depth), shade=False)
+    ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=plt.cm.copper(array_depth), shade=False)
 
-    ax2 = fig.add_subplot(1, 2, 2)
+    ax2 = fig.add_subplot(1, 3, 2)
     ax2.imshow(array_depth)
     
 
+    ax3 = fig.add_subplot(1, 3, 3)
+    ax3.imshow(sample_space)
+
     plt.show()
     pass
+
+def depth_to_grad(depth_array):
+
+    return np.gradient(depth_array)
+
 
 if __name__ == "__main__":
 
@@ -236,12 +247,17 @@ if __name__ == "__main__":
 
         sample_space = markov_chain_monte_carlo(mini_array, 
                                                    num_samples = 5000, 
-                                                   time_steps = 50)
+                                                   time_steps = 80)
         
         sample_gmm = gmm_from_samples(sample_space)
         
+        differential_grid = depth_to_grad(mini_array)
 
-        plot_gmm_depth(sample_gmm, mini_array)
+        plot_gmm_depth(sample_gmm, mini_array, sample_space)
+
+        
+        #fig, ax = plt.subplots()
+        #ax.imshow()
 
     
     
