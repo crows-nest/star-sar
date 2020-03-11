@@ -22,14 +22,9 @@ def markov_chain_monte_carlo(state_space,
     print(sample_space.shape)
 
     for i in tqdm(range(num_samples)):
-
         location = sampled_location(state_space, time_steps)
-
         sample_space[location[0], location[1]] += 1
-        
-
     return sample_space
-
 
 def sampled_location(state_space, time_steps):
     
@@ -43,9 +38,10 @@ def sampled_location(state_space, time_steps):
     while i <= time_steps:
         rand_transition = np.random.rand()
 
-
-        array_grad = get_neighbor_gradients(state_space, index)
-        dict_transition_model = depth_trans_model(array_grad, index)
+        array_grad = depth_to_grad(state_space)
+        array_grad_local = get_neighbor_gradients(np.asarray(array_grad[0]), index)
+        #array_grad = get_neighbor_gradients(state_space, index)
+        dict_transition_model = depth_trans_model(array_grad_local, index)
 
         transition_model = []
         for direction in TRANSITION_ORDER:
@@ -132,7 +128,13 @@ def gradient_score(gradient):
     else:
         return 5
 
-def get_neighbor_gradients(state_space, loc):
+def get_neighbor_gradients(array_grad, loc):
+
+    array_grad_local = array_grad[loc[0]-1:loc[0]+2:, loc[1]-1:loc[1]+2:]
+    
+    return array_grad_local
+
+def get_neighbor_gradients_old(state_space, loc):
     
     array_indexing = [-1, 0, 1]
     height_loc = state_space[loc[0], loc[1]]
@@ -168,7 +170,6 @@ def sample_space_to_samples(sample_space):
 
     return sample_list    
 
-
 def plot_gmm_depth(gmm, array_depth, sample_space):
     
     fig = plt.figure()
@@ -186,19 +187,20 @@ def plot_gmm_depth(gmm, array_depth, sample_space):
     #Z *= .1
     print(Z.shape)
 
+
     norm = plt.Normalize(Z.min(), Z.max())
     colors = cm.viridis(norm(Z))
     rcount, ccount, _ = colors.shape
 
-    ax1 = fig.add_subplot(1, 3, 1, projection='3d')
+    ax1 = fig.add_subplot(1, 3, 3, projection='3d')
 
     surf = ax1.plot_surface(X, Y, Z, rcount=rcount, ccount=ccount,
                             facecolors=colors, shade=False)
 
     surf.set_facecolors((0, 0, 0, 0))
-
-    xx, yy = np.meshgrid(np.linspace(0,100, 100), np.linspace(0,100, 100))
+    #Z_dist_max = Z.max()*2
     
+    xx, yy = np.meshgrid(np.linspace(0,100, 100), np.linspace(0,100, 100))
     X = xx 
     Y = yy
     Z = (xx * 0 )
@@ -210,12 +212,15 @@ def plot_gmm_depth(gmm, array_depth, sample_space):
 
 
     ax1.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=plt.cm.copper(array_depth), shade=False)
+    ax1.axis('off')
+    #ax1.set_zlim(Z_dist_max)
 
-    ax2 = fig.add_subplot(1, 3, 2)
-    ax2.imshow(array_depth)
+
+    ax2 = fig.add_subplot(1, 3, 1)
+    ax2.imshow(array_depth, cmap='copper')
     
 
-    ax3 = fig.add_subplot(1, 3, 3)
+    ax3 = fig.add_subplot(1, 3, 2)
     ax3.imshow(sample_space)
 
     plt.show()
@@ -243,10 +248,8 @@ if __name__ == "__main__":
         mini_array = array_depth[1000:1100, 1000:1100]
         print(mini_array.shape)
      
-
-
         sample_space = markov_chain_monte_carlo(mini_array, 
-                                                   num_samples = 5000, 
+                                                   num_samples = 1000, 
                                                    time_steps = 80)
         
         sample_gmm = gmm_from_samples(sample_space)
@@ -269,7 +272,7 @@ if __name__ == "__main__":
         transition_model_desc = ["left", "forward", "right", "backward", "stop"]
         transition_model = [0.1, 0.4, 0.1, 0.0, 0.4]
         posterior_array = markov_chain_monte_carlo(array_MC,
-                                                   num_samples= 1000, 
+                                                   num_samples= 10, 
                                                    time_steps= 100)
 
         plt.imshow(posterior_array)
