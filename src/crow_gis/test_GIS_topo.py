@@ -8,7 +8,13 @@ class TestGISTopo(unittest.TestCase):
 
     def test_generic(self):
 
-        GIS_obj = GIS_topo(file="n40_w106_1arc_v3.tif")
+        GIS_obj = GIS_topo()
+
+        
+
+
+
+        
 
 
 
