@@ -1,10 +1,11 @@
 #! /usr/bin/python3
 
-import matplotlib.pyplot as plt
-
 from osgeo import gdal, ogr
-import sys
+import matplotlib.pyplot as plt
 import numpy as np
+
+import affine
+import sys
 import json
 
 '''GDAL gotcha'''
@@ -31,9 +32,7 @@ class GIS_topo(object):
        
         self.src_ds = self.open_geotiff(self.filename)
 
-        print(self.extract_AOE(self.src_ds, self.cord_of_interest))
-
-
+        np_aoe = self.get_AOE(self.src_ds, self.cord_of_interest)
     
     
     def open_geotiff(self, filename):
@@ -49,7 +48,7 @@ class GIS_topo(object):
 
         return src_ds
 
-    def extract_depth_np(self, src_ds, raster_band = 1):
+    def get_depth_np(self, src_ds, raster_band = 1):
 
         raster_band = src_ds.GetRasterBand(raster_band)
         np_array = raster_band.ReadAsArray()
@@ -61,37 +60,40 @@ class GIS_topo(object):
 
         return np_array
     
-    def extract_AOE(self, src_ds, cord_of_interst):
+
+    def get_AOE(self, src_ds, cord_of_interst):
         
-        np_depth = self.extract_depth_np(src_ds)
+        np_depth = self.get_depth_np(src_ds)
 
-        ulx, xres, xskew, uly, yskew, yres  = src_ds.GetGeoTransform()
-
-        index_ulx = [(cord_of_interst["ulx"] - ulx)/xres, 
-                    (cord_of_interst["lrx"] - cord_of_interst["ulx"])/xres]
-        index_ulx[1] += index_ulx[0]
-        index_ulx[0] = int(index_ulx[0])
-        index_ulx[1] = int(index_ulx[1])
+        ulx = cord_of_interst["ulx"]
+        uly = cord_of_interst["uly"]
+        lrx = cord_of_interst["lrx"]
+        lry = cord_of_interst["lry"]
 
 
-        index_y = [(cord_of_interst["uly"] - uly)/yres, 
-                    (cord_of_interst["lry"] - cord_of_interst["uly"])/yres]
-
-        index_y[1] += index_y[0]
-        index_y[0] = int(index_y[0])
-        index_y[1] = int(index_y[1])
-
-        #sliced_depth_y = np_depth[index_y[0]:index_y[1], :]
-        #sliced_depth_x = np_depth[:, index_ulx[0]:index_ulx[1]]
+        index_ul = self.get_pixel_coord((ulx, uly), src_ds)
+        index_lr = self.get_pixel_coord((lrx, lry), src_ds)
         
-        aoe = np_depth[index_y[0]:index_y[1], index_ulx[0]:index_ulx[1]]
+        #TODO out of index check numpy loops indexes
 
-        #self.plot_depth(np_depth, sliced_depth_x, sliced_depth_y, aoe)
+        np_aoe = np_depth[index_ul[0]:index_lr[0]:, 
+                          index_ul[0]:index_lr[0]:]
 
-        return aoe        
+        return np_aoe        
 
+    def get_pixel_coord(self, geo_coord, src_ds):
 
-    def plot_depth(self, orig, aoe_x, aoe_y, aoe):
+        x, y = geo_coord[0], geo_coord[1]
+        forward_transform =  \
+            affine.Affine.from_gdal(*src_ds.GetGeoTransform())
+        reverse_transform = ~forward_transform
+        px, py = reverse_transform * (x, y)
+        px, py = int(px + 0.5), int(py + 0.5)
+        pixel_coord = px, py
+
+        return pixel_coord
+
+    def plot_depth(self, list_graph):
 
         fig = plt.figure()
 
