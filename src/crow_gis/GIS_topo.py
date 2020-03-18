@@ -4,6 +4,7 @@ from osgeo import gdal, ogr
 import matplotlib.pyplot as plt
 import numpy as np
 
+import os
 import affine
 import sys
 import json
@@ -30,8 +31,7 @@ class GIS_topo(object):
         """
        
 
-        json_file = open(configfile)
-        json_data = json.load(json_file)
+        json_data = self.open_json(configfile)
 
         self.filename = json_data["filename_depth"]
         self.cord_of_interest = json_data["cord_of_interest"]
@@ -42,10 +42,22 @@ class GIS_topo(object):
 
         self.plot_depth(graph_list)
     
-    
+
+    def open_json(self, configfile):
+        file_path = os.path.dirname(os.path.realpath(__file__))
+
+        filename = file_path + "/" + configfile
+
+        json_file = open(filename)
+
+        json_data = json.load(json_file)
+
+        return json_data
+        
+
     def open_geotiff(self, filename):
         """
-        loads a geirtif file, file pathing is relative to exection
+        loads a geotif file, file pathing is relative to exection
         TODO make global file referencing
         
         Parameters
@@ -58,8 +70,10 @@ class GIS_topo(object):
         GDAL raster dataset
             GDAL raster object
         """
+        file_path = os.path.dirname(os.path.realpath(__file__))
 
-        self.filename = filename
+        filename = file_path + "/" + filename
+        print(filename)
         src_ds = gdal.Open(filename)
 
         if src_ds is None:
@@ -97,7 +111,6 @@ class GIS_topo(object):
 
         return np_array
     
-
     def get_AOE(self, src_ds, cord_of_interst):
         """
         using th GDAL dataset returns the area define by cord_of_interest dict.
@@ -184,19 +197,4 @@ class GIS_topo(object):
 
 
         plt.show()
-
-
-
-
-
-        
-
-
-
-
-
-        
-
-        
-
 
