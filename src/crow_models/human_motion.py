@@ -237,13 +237,9 @@ if __name__ == "__main__":
     if GIS_ENABLE:
         GIS_obj = GIS_topo()
         
-        dir_path = dirname = os.path.dirname(os.path.realpath(__file__))
-
-        dir_path = dir_path.split("crow_models")[0]
-        filename = os.path.join(dir_path, 'crow_gis/n40_w106_1arc_v3.tif')
-
-        src_ds = GIS_obj.open_geotiff(filename)
-        array_depth = GIS_obj.extract_depth_np(src_ds)
+       
+        src_ds = GIS_obj.open_geotiff(GIS_obj.filename)
+        array_depth = GIS_obj.get_depth_np(src_ds)
 
         mini_array = array_depth[1000:1100, 1000:1100]
         print(mini_array.shape)
