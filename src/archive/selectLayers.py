@@ -80,6 +80,3 @@ if __name__ == "__main__":
     test.setupUi(window)
     window.show()
     app.exec_()
-
-
-

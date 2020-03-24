@@ -13,11 +13,9 @@ import json
 gdal.UseExceptions()    # Enable exceptions
 
 
-class GIS_topo(object):
+class GIS_import(object):
     """
-    abstraction of GDAL raster object
-    prefered as raster only?
-    abstraction of vector types too? 
+    importer for GIS data using GDAL
     """
 
     def __init__(self, configfile="config_1.json"):
@@ -29,24 +27,17 @@ class GIS_topo(object):
         configfile : str, optional
             the JSON file to load configurations from, by default "config_1.json"
         """
-       
-
+    
         json_data = self.open_json(configfile)
 
         self.filename = json_data["filename_depth"]
         self.cord_of_interest = json_data["cord_of_interest"]
         self.src_ds = self.open_geotiff(self.filename)
-        graph_list = []
-        graph_list.append(self.get_AOE(self.src_ds, self.cord_of_interest))
-        graph_list.append(self.get_AOE(self.src_ds, self.cord_of_interest))
-
-        self.plot_depth(graph_list)
-    
-
+      
     def open_json(self, configfile):
         file_path = os.path.dirname(os.path.realpath(__file__))
 
-        filename = file_path + "/" + configfile
+        filename = file_path + "/configs/" + configfile
 
         json_file = open(filename)
 
@@ -54,7 +45,6 @@ class GIS_topo(object):
 
         return json_data
         
-
     def open_geotiff(self, filename):
         """
         loads a geotif file, file pathing is relative to exection
@@ -194,7 +184,11 @@ class GIS_topo(object):
 
             ax = fig.add_subplot(1, num_graphs, index + 1)
             ax.imshow(graph)
-
-
         plt.show()
 
+
+if __name__ == "__main__":
+
+    print("hey make a script for using the importer class")
+
+    

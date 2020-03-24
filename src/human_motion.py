@@ -3,7 +3,7 @@
 import os
 
 import matplotlib.pyplot as plt
-from crow_gis.GIS_topo import GIS_topo
+import GIS_import
 import numpy as np
 from tqdm import tqdm
 from sklearn import mixture

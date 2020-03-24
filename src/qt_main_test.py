@@ -4,7 +4,7 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication
 
-Form, Window = uic.loadUiType("searchHomePage.ui")
+Form, Window = uic.loadUiType("qt_ui/searchHomePage.ui")
 
 app = QApplication([])
 window = Window()

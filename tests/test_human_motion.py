@@ -3,6 +3,7 @@
 import unittest
 
 from crow_models.human_motion import get_neighbor_gradients
+from crow_gis.model
 
 array_topo_test = [4000, 4002, 4005]
 
