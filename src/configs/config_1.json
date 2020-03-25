@@ -5,5 +5,6 @@
     "lry": 40.0 
     },
  "filename_depth":"n40_w106_1arc_v3.tif",
- "filename_trails":"nonname_.noname"
+ "filename_trails":"nonname_.noname",
+ "proxy_gis_filename": "depth_boulder.json"
 }
