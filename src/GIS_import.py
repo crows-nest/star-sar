@@ -26,7 +26,8 @@ class GIS_import(object):
         Parameters
         ----------
         configfile : str, optional
-            the JSON file to load configurations from, by default "config_1.json"
+            the JSON file to load configurations from, by default 
+            "config_1.json"
         """
 
         json_data = self.open_json(configfile)
@@ -39,6 +40,14 @@ class GIS_import(object):
         self.gis_dict= {}
 
     def write_gis_dict_json(self, filename):
+        """
+        write gis_dict json
+        
+        Parameters
+        ----------
+        filename : str
+            filename to write json as
+        """
 
         file_path = self._format_filepath_json(filename)
         json_dict = self.gis_dict
@@ -51,12 +60,34 @@ class GIS_import(object):
             json.dump(json_dict, outfile)
 
     def read_gis_dict_json(self, filename):
+        """
+        load a gis_dict json file
+        
+        Parameters
+        ----------
+        filename : str
+            
+        """
         
         file_path = self._format_filepath_json(filename)
         with open(file_path) as json_file:
             self.gis_dict = json.load(json_file)
         
     def _format_filepath_json(self, filename):
+        """
+        format filename to include absolute pathing relative to the GIS_import
+        script
+        
+        Parameters
+        ----------
+        filename : str
+            filename to json format
+        
+        Returns
+        -------
+        str
+            absolute pathing for filename
+        """
          
         if filename.endswith('.json'):
             pass
@@ -68,6 +99,17 @@ class GIS_import(object):
         return file_path
     
     def add_dict(self, dict_data, key):
+        """
+        adds dictionary to gis_dict with the key value given
+        acceptable key values are "depth" and "trail"
+        
+        Parameters
+        ----------
+        dict_data : dict
+            
+        key : str
+            key value to pull up data dictionary
+        """
         #simple check for overwritting data
         if key in self.gis_dict.keys():
             tmp = input("dictionary already present overwrite? Y/n")
@@ -85,6 +127,21 @@ class GIS_import(object):
             self.gis_dict[key] = dict_data
 
     def build_geotiff_to_dict(self, filename, data_bounding_box):
+        """
+        uses geotiff to build dataset dictionary
+        
+        Parameters
+        ----------
+        filename : str
+            filename to loaf geotiff data from
+        data_bounding_box : dict
+            
+        
+        Returns
+        -------
+        dict
+            dictionray with depth data and parameters
+        """
 
         depth_dict = {}
         geotiff_ds = self.open_geotiff(filename)
@@ -99,6 +156,19 @@ class GIS_import(object):
         return depth_dict
 
     def open_json(self, configfile):
+        """
+        open JSON file and return dictionary of values
+        
+        Parameters
+        ----------
+        configfile : str
+            name of config file to use
+        
+        Returns
+        -------
+        dict
+            dictionary of JSON data
+        """
         file_path = os.path.dirname(os.path.realpath(__file__))
 
         filename = file_path + "/configs/" + configfile
@@ -140,7 +210,8 @@ class GIS_import(object):
 
     def get_depth_np(self, src_ds, raster_band = 1):
         """
-        uses a GDAL raster dataset to open first raster band and turn into numpy array
+        uses a GDAL raster dataset to open first raster band and turn into 
+        numpy array
         
         Parameters
         ----------
@@ -161,14 +232,15 @@ class GIS_import(object):
 
         array_shape = np_array.shape
 
-        print(f"converted raster {raster_band} into numpy arrray  of size {array_shape}")
+        print(f"converted raster {raster_band} into numpy arrray  of size 
+        {array_shape}")
 
         return np_array
     
     def get_AOI(self, src_ds, cord_of_interst):
         """
-        using th GDAL dataset returns the area define by data_bounding_box dict.
-        the cord are defined in terms of lat and long
+        using th GDAL dataset returns the area define by data_bounding_box 
+        dict. the cord are defined in terms of lat and long
         no errors for out if bounds cordinates
         #TODO out of bounds errors? probably not worth the effort now
         Parameters
@@ -176,7 +248,8 @@ class GIS_import(object):
         src_ds : GDAL raster dataset
             GDAL raster object
         cord_of_interst : dict
-            dictionary of coordinates contains: ulx, uly, lrx, lry (Upper Left and Lower Right)
+            dictionary of coordinates contains: ulx, uly, lrx, lry 
+            (Upper Left and Lower Right)
         
         Returns
         -------
@@ -252,16 +325,12 @@ class GIS_import(object):
 
 if __name__ == "__main__":
 
-    #some sample scripting
-
+    #some sample scripting to write depth 
     data_obj = GIS_import()
-
-    
     depth_dict = data_obj.build_geotiff_to_dict(data_obj.filename_depth, 
                                                 data_obj.data_bounding_box)
 
     data_obj.add_dict(depth_dict, "depth")
-
     data_obj.write_gis_dict_json("depth_boulder.json")
 
     
