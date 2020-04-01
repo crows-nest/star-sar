@@ -60,3 +60,37 @@ for distro in distros_dict:
 
     print("Iterated")
 # End Basic Waypointing Loop
+
+
+
+import collections #for circulat buffer
+import threading
+
+#TODO multi drone capability https://github.com/microsoft/AirSim/blob/master/PythonClient/multirotor/multi_agent_drone.py
+#TODO thread the pose function https://realpython.com/intro-to-python-threading/
+
+class drone_controller(object):
+
+    def __init__(self, drone_name="drone_1", buffer_length=10):
+        #TODO initialize the API and control
+        self.pose_buff = collections.deque(maxlen=10)
+        pass
+
+    def load_waypoints(self, filename):
+        waypoint_list = []
+        return waypoint_list
+    
+    def execute_waypoints(self, waypoint_list):
+        pass
+    
+    def start_callback(self):
+        pass
+
+    def stop_callback(self):
+        pass
+
+    def _pose_callback(self, freq):
+        #TODO create thread for drone pose callback
+        #TODO record into circular buffer? pose + timestamp?
+        pass
+
