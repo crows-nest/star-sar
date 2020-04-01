@@ -5,6 +5,7 @@
     "lry": 40.0 
     },
  "filename_depth":"n40_w106_1arc_v3.tif",
- "filename_trails":"nonname_.noname",
+ "filename_trails":"Trans_TrailSegment.tif",
+ "filename_trails_shapefile":"Trans_TrailSegment.shp",
  "proxy_gis_filename": "depth_boulder.json"
 }

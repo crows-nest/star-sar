@@ -128,3 +128,10 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .vscode/
+
+# The trails geotiff file exceeds Github's max file size
+src/data/Trans_TrailSegment.tif
+
+# Jake L's stuff
+Jake's Setup and Sources.txt
+.gitignore

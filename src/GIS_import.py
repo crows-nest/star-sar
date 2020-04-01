@@ -4,10 +4,13 @@ from osgeo import gdal, ogr
 import matplotlib.pyplot as plt
 import numpy as np
 
-import os
+from pathlib import Path
+
 import affine
-import sys
 import json
+import os
+import sys
+
 
 '''GDAL gotcha'''
 gdal.UseExceptions()    # Enable exceptions
@@ -33,6 +36,8 @@ class GIS_import(object):
         json_data = self.open_json(configfile)
 
         self.filename_depth = json_data["filename_depth"]
+        self.filename_trails = json_data["filename_trails"]
+        self.filename_trails_shapefile = json_data["filename_trails_shapefile"]
         self.data_bounding_box = json_data["data_bounding_box"]
         
         # GIS dictionary object will contain all the neccessary GIS data for
@@ -94,9 +99,9 @@ class GIS_import(object):
         else:
             filename += ".json"
          
-        file_path = os.path.dirname(os.path.realpath(__file__))
-        file_path += "/data/" + filename
-        return file_path
+        file_path = Path(os.path.dirname(os.path.realpath(__file__)))
+        file_path = file_path / "data" / filename
+        return str(file_path)
     
     def add_dict(self, dict_data, key):
         """
@@ -126,6 +131,108 @@ class GIS_import(object):
             print(f"write {key} to gis_dict")
             self.gis_dict[key] = dict_data
 
+    def check_if_trails_geotiff_exists(self, filename):
+        """
+        Checks if a trails GeoTiff file exists, file pathing is relative to 
+        execution
+        TODO make global file referencing
+
+        Parameters
+        ----------
+        filename : string
+            name of geotiff file
+        
+        Returns
+        -------
+        result : Bool
+            True if file exists, False otherwise
+        """
+        file_path = Path(os.path.dirname(os.path.realpath(__file__)))
+        file_path = file_path / "data" / filename
+        return os.path.exists(str(file_path))
+
+    def convert_shapefile_to_geotiff(self, input_vector_file_name):
+        """
+        Converts a Shapefile file to a GeoTiff file, file pathing is relative
+        to execution Rasterises the shapefile to the same projection & pixel 
+        resolution as a reference imagw Based on 
+        https://gis.stackexchange.com/questions/222394/
+        how-to-convert-file-shp-to-tif-using-ogr-or-python-or-gdal
+        TODO make global file referencing
+        
+        Parameters
+        ----------
+        input_vector_file_path : string
+            File name of the Shapefile file to convert
+        
+        Returns
+        -------
+        None
+        """
+
+        file_path = Path(os.path.dirname(os.path.realpath(__file__)))
+
+        # File path of the input Shapefile that will be converted
+        input_vector_file_path = str(file_path / "data" / 
+                                     input_vector_file_name)
+
+        # File path of the raster GeoTiff that will be created
+        output_raster_file_path = str(file_path / "data" / 
+                                      self.filename_trails)
+
+        # File path of the reference raster GeoTiff
+        reference_raster_file_path = str(file_path / "data" / 
+                                         self.filename_depth)
+
+        gdal_format = "GTiff"
+        datatype = gdal.GDT_Byte
+        burn_val = 1 # value for the output image pixels
+
+        # Open the reference image
+        ref_image = gdal.Open(reference_raster_file_path, gdal.GA_ReadOnly)
+
+        # Open input Shapefile
+        shapefile = ogr.Open(input_vector_file_path)
+        shapefile_layer = shapefile.GetLayer()
+
+        # Specify resolution to be a multiple of that of reference image
+        multiple = 1
+        x_res = ref_image.RasterXSize * multiple
+        y_res = ref_image.RasterYSize * multiple
+
+        # Rasterize
+        print("Rasterising shapefile...")
+        driver = gdal.GetDriverByName(gdal_format)
+        output = driver.Create(output_raster_file_path,
+                               x_res,
+                               y_res,
+                               1,
+                               datatype,
+                               options=["COMPRESS=DEFLATE"])
+        output.SetProjection(ref_image.GetProjectionRef())
+        output.SetGeoTransform(ref_image.GetGeoTransform())
+
+        # Write data to band 1
+        band = output.GetRasterBand(1)
+        band.SetNoDataValue(0)
+        gdal.RasterizeLayer(output,
+                            [1],
+                            shapefile_layer,
+                            burn_values=[burn_val])
+
+        # Close datasets
+        # this is a gdal gotcha; need to close datasets to write data
+        band = None
+        output = None
+        ref_image = None
+        shapefile = None
+
+        # Build image overviews
+        #subprocess.call("gdaladdo --config COMPRESS_OVERVIEW DEFLATE " + 
+        # output_raster_file_path + " 2 4 8 16 32 64", shell=True)
+        print("Done")
+        
+
     def build_geotiff_to_dict(self, filename, data_bounding_box):
         """
         uses geotiff to build dataset dictionary
@@ -133,14 +240,14 @@ class GIS_import(object):
         Parameters
         ----------
         filename : str
-            filename to loaf geotiff data from
+            filename to load geotiff data from
         data_bounding_box : dict
             
         
         Returns
         -------
         dict
-            dictionray with depth data and parameters
+            dictionary with depth data and parameters
         """
 
         depth_dict = {}
@@ -169,9 +276,9 @@ class GIS_import(object):
         dict
             dictionary of JSON data
         """
-        file_path = os.path.dirname(os.path.realpath(__file__))
+        file_path = Path(os.path.dirname(os.path.realpath(__file__)))
 
-        filename = file_path + "/configs/" + configfile
+        filename = file_path / "configs" / configfile
 
         json_file = open(filename)
 
@@ -194,17 +301,46 @@ class GIS_import(object):
         GDAL raster dataset
             GDAL raster object
         """
-        file_path = os.path.dirname(os.path.realpath(__file__))
+        file_path = Path(os.path.dirname(os.path.realpath(__file__)))
 
-        filename = file_path + "/data/" + filename
+        filename = file_path / "data" / filename
         print(filename)
-        src_ds = gdal.Open(filename)
+        src_ds = gdal.Open(str(filename))
 
         if src_ds is None:
-            print('Unable to open INPUT.tif')
+            print(f'Unable to open {filename}')
             return
         
         print(f"GIS file {filename} opened")
+
+        return src_ds
+
+    def open_shapefile(self, filename):
+        """
+        loads a Shapefile file, file pathing is relative to execution
+        TODO make global file referencing
+        
+        Parameters
+        ----------
+        filename : string
+            name of Shapefile file to open
+        
+        Returns
+        -------
+        OGR vector dataset
+            OGR vector object
+        """
+        file_path = Path(os.path.dirname(os.path.realpath(__file__)))
+
+        filename = file_path / "data" / filename
+        print(filename)
+        src_ds = ogr.Open(str(filename))
+
+        if src_ds is None:
+            print(f'Unable to open {filename}')
+            return
+        
+        print(f"Vector file {filename} opened")
 
         return src_ds
 
@@ -232,7 +368,7 @@ class GIS_import(object):
 
         array_shape = np_array.shape
 
-        print(f"converted raster {raster_band} into numpy arrray  of size 
+        print(f"converted raster {raster_band} into numpy arrray  of size \
         {array_shape}")
 
         return np_array
@@ -300,7 +436,7 @@ class GIS_import(object):
 
         return pixel_coord
 
-    def plot_depth(self, list_graph):
+    def plot_raster(self, list_graph):
         """
         plots 2D arrays as graphs in matlplotlib
         accepts lists of 2D arrays to be graphed
@@ -324,13 +460,24 @@ class GIS_import(object):
 
 
 if __name__ == "__main__":
-
-    #some sample scripting to write depth 
+    
+    #some sample scripting to write depth and trails
     data_obj = GIS_import()
     depth_dict = data_obj.build_geotiff_to_dict(data_obj.filename_depth, 
                                                 data_obj.data_bounding_box)
-
     data_obj.add_dict(depth_dict, "depth")
-    data_obj.write_gis_dict_json("depth_boulder.json")
+    
+    """
+    if data_obj.check_if_trails_geotiff_exists(data_obj.filename_trails) is False:
+        data_obj.convert_shapefile_to_geotiff(data_obj.filename_trails_shapefile)
+    """
+    data_obj.convert_shapefile_to_geotiff(data_obj.filename_trails_shapefile)
+    
+    trails_dict = data_obj.build_geotiff_to_dict(data_obj.filename_trails, 
+                                                data_obj.data_bounding_box)
+    data_obj.add_dict(trails_dict, "trails")
 
+    data_obj.plot_raster([depth_dict["data"], trails_dict["data"]])
+
+    data_obj.write_gis_dict_json("depth_and_trails_boulder.json")
     
