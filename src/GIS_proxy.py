@@ -7,6 +7,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import affine
+import math
 
 class GIS_proxy(object):
     """
@@ -70,14 +71,19 @@ class GIS_proxy(object):
     def get_pixel_coord(self, geo_coord, dict_map):
         x, y = geo_coord[0], geo_coord[1]
         geotransform = self._geotransform(dict_map)
-        print(geotransform)
         fwd = affine.Affine.from_gdal(*geotransform)
         rev = ~fwd
         px, py = rev * (x, y)
         px, py = int(px + 0.5), int(py + 0.5)
         pixel_coord = (px, py)
         return pixel_coord
-    
+
+    def get_geo_coord(self, index, dict_map):
+        geotransform = self._geotransform(dict_map)
+        fwd = affine.Affine.from_gdal(*geotransform)
+        coord = fwd * index
+        return coord
+
     def _geotransform(self, dict_map):
         resolution = dict_map["resolution"]
         ulx = float(dict_map["data_bound_box"]["ulx"])
@@ -85,7 +91,24 @@ class GIS_proxy(object):
         geotransform = (ulx, resolution["x"], 0, uly, 0, resolution["y"])
         return geotransform
 
+    def get_dist_coord(self, coord1, coord2):
+        return self._haversine(coord1, coord2)
+
+    def _haversine(self, coord1, coord2):
+        R = 6372800  # Earth radius in meters
+        lat1, lon1 = coord1
+        lat2, lon2 = coord2
         
+        phi1, phi2 = math.radians(lat1), math.radians(lat2) 
+        dphi       = math.radians(lat2 - lat1)
+        dlambda    = math.radians(lon2 - lon1)
+        
+        a = math.sin(dphi/2)**2 + \
+            math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+    
+        return 2*R*math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
 def open_json(configfile):
 
     file_path = os.path.dirname(os.path.realpath(__file__))
@@ -103,7 +126,7 @@ if __name__ == "__main__":
     data_proxy = GIS_proxy()
     data_proxy.load_data(json_data["proxy_gis_filename"])
     graph_list = [data_proxy.gis_dict["depth"]["data"]]
-    data_proxy.plot_depth(graph_list)
+    data_proxy.plot_raster(graph_list)
 
 
 
