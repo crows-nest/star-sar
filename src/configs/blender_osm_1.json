@@ -1,8 +1,8 @@
 {"data_bounding_box":{
+    "uly": 40.1,
     "ulx": -105.38,
-    "uly": 40.1, 
-    "lrx": -105.28,
-    "lry": 40.0
+    "lry": 40.0,
+    "lrx": -105.28
     },
     "filename_depth":"n40_w106_1arc_v3.tif",
     "filename_trails":"Trans_TrailSegment.tif",

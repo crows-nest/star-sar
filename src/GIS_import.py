@@ -232,7 +232,6 @@ class GIS_import(object):
         # output_raster_file_path + " 2 4 8 16 32 64", shell=True)
         print("Done")
         
-
     def build_geotiff_to_dict(self, filename, data_bounding_box):
         """
         uses geotiff to build dataset dictionary
@@ -344,7 +343,7 @@ class GIS_import(object):
 
         return src_ds
 
-    def get_layer(self, src_ds, raster_band = 1):
+    def get_depth_np(self, src_ds, raster_band = 1):
         """
         uses a GDAL raster dataset to open first raster band and turn into 
         numpy array
@@ -393,7 +392,7 @@ class GIS_import(object):
             [description]
         """
         
-        np_depth = self.get_layer(src_ds)
+        np_depth = self.get_depth_np(src_ds)
 
         ulx = cord_of_interst["ulx"]
         uly = cord_of_interst["uly"]
@@ -462,11 +461,10 @@ class GIS_import(object):
 if __name__ == "__main__":
     
     #some sample scripting to write depth and trails
-    data_obj = GIS_import()
+    data_obj = GIS_import(configfile="blender_osm_1.json")
     depth_dict = data_obj.build_geotiff_to_dict(data_obj.filename_depth, 
                                                 data_obj.data_bounding_box)
     data_obj.add_dict(depth_dict, "depth")
-    print(data_obj.gis_dict["depth"]["data"].shape)
     
     """
     if data_obj.check_if_trails_geotiff_exists(data_obj.filename_trails) is False:
@@ -475,10 +473,10 @@ if __name__ == "__main__":
     data_obj.convert_shapefile_to_geotiff(data_obj.filename_trails_shapefile)
     
     trails_dict = data_obj.build_geotiff_to_dict(data_obj.filename_trails, 
-                                                 data_obj.data_bounding_box)
+                                                data_obj.data_bounding_box)
     data_obj.add_dict(trails_dict, "trails")
 
     data_obj.plot_raster([depth_dict["data"], trails_dict["data"]])
 
-    data_obj.write_gis_dict_json("depth_and_trails_boulder.json")
+    data_obj.write_gis_dict_json("D_T_blender.json")
     

@@ -13,11 +13,9 @@ class GIS_proxy(object):
     """
     empty skeleton to be filled later
     """
-    
     def __init__(self):
         
         self.gis_dict = {}
-
 
     def load_data(self, filename):
 
@@ -92,7 +90,22 @@ class GIS_proxy(object):
         return geotransform
 
     def get_dist_coord(self, coord1, coord2):
-        return self._haversine(coord1, coord2)
+        return self._haversine2(coord1, coord2)
+
+    def _haversine2(self, origin, destination):
+        lon1, lat1 = origin
+        lon2, lat2  = destination
+
+        radius = 6371 # km
+
+        dlat = math.radians(lat2-lat1)
+        dlon = math.radians(lon2-lon1)
+        a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) \
+            * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        d = radius * c
+
+        return d
 
     def _haversine(self, coord1, coord2):
         R = 6372800  # Earth radius in meters
@@ -107,7 +120,6 @@ class GIS_proxy(object):
             math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
     
         return 2*R*math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
 
 def open_json(configfile):
 
