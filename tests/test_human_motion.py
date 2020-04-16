@@ -2,28 +2,37 @@
 
 import unittest
 
-from crow_models.human_motion import get_neighbor_gradients
-from crow_gis.model
+from human_motion import human_motion_model
 
-array_topo_test = [4000, 4002, 4005]
+from GIS_proxy import GIS_proxy, open_json
+
+
+json_data = open_json("blender_osm_1.json")
+data_proxy = GIS_proxy()
+data_proxy.load_data(json_data["proxy_gis_filename"])
+
+
 
 
 class test_functions(unittest.TestCase):
 
-    def test_get_neighbor_gradients(self):
-
-        GIS_obj = GIS_topo()
+    def test_init(self):
         
-        dir_path = dirname = os.path.dirname(os.path.realpath(__file__))
 
-        dir_path = dir_path.split("crow_models")[0]
-        filename = os.path.join(dir_path, 'crow_gis/n40_w106_1arc_v3.tif')
+        config = {"num_samples":1000, "time_steps":300}
+        human_model = human_motion_model()
+        
+        depth_data = data_proxy.get_layer("depth")["data"]
+        trails_data = data_proxy.get_layer("trails")["data"]
 
-        src_ds = GIS_obj.open_geotiff(filename)
-        array_depth = GIS_obj.extract_depth_np(src_ds)
 
-        mini_array = array_depth[1000:1100, 1000:1100]
+        sample_space = human_model.execute_mcmc(data_proxy, **config)
+        
 
+        data_proxy.plot_raster([sample_space, depth_data, trails_data])
+        #gmm = human_model.gmm_from_samples(sample_space)
+
+        #human_model.plot_gmm_depth(gmm, depth_data, sample_space)
         
 
 
