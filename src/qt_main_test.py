@@ -21,7 +21,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 class Window(QMainWindow):
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
-        uic.loadUi("./qt_ui/mainPage.ui", self)
+        uic.loadUi("qt_ui/mainPage.ui", self)
 
         # Plot Layout
         self.figure = plt.figure(figsize=(16, 9), dpi=100)
@@ -30,7 +30,8 @@ class Window(QMainWindow):
         layout.addWidget(self.canvas)
         self.Plot.setLayout(layout)
 
-        self.toggles = {'Satellite Data': True, 'Human Motion Model': True, 'RF Model': True, 'Fused Data Model': True}
+        self.toggles = {'Satellite Data': True, 'Human Motion Model': True, 
+                        'RF Model': True, 'Fused Data Model': True}
         self.views = {'2d': self.plot2d, '3d': self.plot3d}
         
         # Map Vars
@@ -110,9 +111,11 @@ class Window(QMainWindow):
         norm = plt.Normalize(Z.min(), Z.max())
         cmap = plt.get_cmap('jet')
 
-        if self.toggles['Fused Data Model']: surf = ax.contourf(X, Y, Z, alpha=float(self.alpha)/10, antialiased=True, cmap=cmap)
+        if self.toggles['Fused Data Model']:
+             surf = ax.contourf(X, Y, Z, alpha=float(self.alpha)/10, 
+                                antialiased=True, cmap=cmap)
 
-        arr = mpimg.imread("/Users/jakemcgrath/Desktop/star-sar/star-sar-ui_integration/src/test.png")
+        arr = mpimg.imread("qt_ui/test.png")
         extent = ax.get_xlim()+ ax.get_ylim()
 
         if self.toggles['Satellite Data']:ax.imshow(arr, extent=extent)
@@ -141,7 +144,7 @@ class Window(QMainWindow):
                             facecolors=colors, shade=False)
         surf.set_facecolor((0,0,0,0))
 
-        arr = mpimg.imread("/Users/jakemcgrath/Desktop/star-sar/star-sar-ui_integration/src/test.png")
+        arr = mpimg.imread("qt_ui/test.png")
         height, width = arr.shape[:2]
         # 10 is equal length of x and y axises of your surface
         stepX, stepY = self.res/width, self.res/height
