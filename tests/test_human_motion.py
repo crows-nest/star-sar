@@ -16,6 +16,7 @@ data_proxy.load_data(json_data["proxy_gis_filename"])
 
 class test_functions(unittest.TestCase):
 
+    @unittest.SkipTest
     def test_init(self):
         
 
@@ -33,7 +34,14 @@ class test_functions(unittest.TestCase):
         #gmm = human_model.gmm_from_samples(sample_space)
 
         #human_model.plot_gmm_depth(gmm, depth_data, sample_space)
+    
+    def test_new_rollout(self):
         
+        config = {"num_samples":1000, "time_steps":300}
+
+        human_model = human_motion_model(data_proxy, time_horizon=1000)
+
+
 
 
 if __name__ == "__main__":

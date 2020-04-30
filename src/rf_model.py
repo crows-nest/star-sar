@@ -153,7 +153,8 @@ class FriisTrans(object):
 
 class RFModel(object):
 
-    def __init__(self, data_proxy, layer="depth", dbi_thres=0.001, Pt=3, Gt=2, Gr=15, mhz=2400):
+    def __init__(self, data_proxy, layer="depth", dbi_thres=0.001, 
+                 Pt=3, Gt=2, Gr=15, mhz=2400):
         
         self.data_proxy = data_proxy
         self.layer = layer
