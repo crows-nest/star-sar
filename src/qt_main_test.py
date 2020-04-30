@@ -107,7 +107,11 @@ class Window(QMainWindow):
         R = np.sqrt(X**2 + Y**2)
         Z = np.sin(R)
 
+<<<<<<< HEAD
         #Normalize to [0,1]
+=======
+        # Normalize to [0,1]
+>>>>>>> ui_integration
         norm = plt.Normalize(Z.min(), Z.max())
         cmap = plt.get_cmap('jet')
 
